@@ -3,6 +3,7 @@
 from django.db import models
 from django.template import Template
 from django.template import Context
+import types
 
 class XPathRenderer(object):
     """This is an interface for objects that have __xml__"""
@@ -54,7 +55,6 @@ def xmlify(qs, use_values=True, **kwargs):
     if use_values:
         rows = qs.values(*django_fields)
     else:
-        import types
         for row in qs:
             row_result = {}
             for field in django_fields:
@@ -67,13 +67,13 @@ def xmlify(qs, use_values=True, **kwargs):
     # Make a nice list of template outputed rows
     from lxml import etree
     xmlname = qs.model.__name__
-    xmlroot = etree.Element("%ss" % xmlname)
+    xmlroot = etree.Element("%ss" % xmlname.lower())
     #import pdb
     #pdb.set_trace()
     for record in rows:
         c = Context()
         c.update(record)
-        child = etree.SubElement(xmlroot, xmlname)
+        child = etree.SubElement(xmlroot, xmlname.lower())
         for name,template in template_list:
             if name in text_fields:
                 elem = etree.SubElement(child, name)
@@ -92,7 +92,7 @@ from django.db.models.query import QuerySet
 class XmlQuerySet(QuerySet):
     """A queryset that does xmlifying"""
     def xml(self, **kwargs):
-        return xmlify(self, use_values=self.use_values, **kwargs)
+        return xmlify(self, use_values=getattr(self, "use_values", True), **kwargs)
 
 def monkey_qs(qs, use_values=True):
     """Decorate a queryset with an 'xml' method.
@@ -125,18 +125,33 @@ def monkey_qs(qs, use_values=True):
 
        xdjango:smiths()
     """
-    qs = qs._clone()
     # We use a func here instead of a lambda purely for debuggability
     def adapt(**args):
         data = xmlify(qs, use_values=use_values, **args)
         return data
-    qs.__dict__["xml"] = adapt
-    qs.__dict__["use_values"] = use_values
-    qs.__class__ = XmlQuerySet
-    return qs
+    capturedclone = qs._clone
+    def xmlclone(selfarg, *args, **kwargs):
+        newclone = capturedclone(*args, **kwargs)
+        newclone.__dict__["xml"] = adapt
+        newclone.__dict__["use_values"] = use_values
+        newclone.__dict__["_clone"] = types.MethodType(xmlclone, selfarg, selfarg.__class__)
+        return newclone
+    return xmlclone(qs)
+
 
 class RenderingManager(models.Manager):
-    """Use monkey_qs to decorate the queryset."""
+    """Use monkey_qs to decorate the queryset.
+
+    This makes querysets that use values calls by default. To get a
+    queryset that will render without using values create the manager
+    with:
+
+      use_values=False
+    """
+    def __init__(self, use_values=True):
+        models.Manager.__init__(self)
+        self.use_values = use_values
+
     def get_query_set(self):
         qs = super(RenderingManager, self).get_query_set()
         return monkey_qs(qs)

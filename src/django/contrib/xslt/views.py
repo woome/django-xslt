@@ -4,10 +4,9 @@ from django.conf import settings
 from os.path import join
 
 import logging
-import pdb
 
-from . import TransformerFile
-from . import EMPTYDOC
+from engine import TransformerFile
+from engine import EMPTYDOC
 
 DEFAULT_PAGE_NAMESPACE="page"
 DEFAULT_PAGE_PATTERN="%s_%s.xslt"

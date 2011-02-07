@@ -6,8 +6,7 @@ import time
 from django.template import Context
 from testhelp import assertXpath
 from unittest import TestCase
-import mock
-import xslt
+from django.contrib import xslt
 
 BLANK = """<?xml version="1.0" encoding="utf-8"?>
 <xsl:stylesheet  version="1.0" 
@@ -56,9 +55,13 @@ class DjangoContextFuncTest(TestCase):
         xslt.djangothread.context = None
 
 
-class XSLT(TestCase):
+from django.test.client import Client
+
+class XSLTTest(TestCase):
     """Test the xslt system..
     """
+    def setUp(self):
+        self.client = Client()
 
     def test_simple_page(self):
         """Test that we can retrieve the simple page."""
@@ -66,26 +69,8 @@ class XSLT(TestCase):
         self.assertEquals(response.status_code, 200)
         print response.content
 
-    def test_woome_page(self):
-        """Test that we can retrieve a WooMe page.
 
-        This tests that imports of WooMe's existing XSLTs work."""
-
-        response = self.client.get("/testtransform/woomepage/")
-        self.assertEquals(response.status_code, 200)
-
-        tester = self.make_and_get_person('xsl1')
-        self.client.login(username=tester.user.username)
-        response = self.client.get("/testtransform/woomepage/")
-        print response.content
-
-        self.assertEquals(response.status_code, 200)
-        assertXpath(
-            response.content,
-            "//div[@id='test__username']/text()='%s'" % tester.user.username,
-            )
-
-import xslt.managers
+from django.contrib.xslt import managers as xsltmanagers
 
 class QSRenderTestCase(TestCase):
     def setUp(self):
@@ -112,7 +97,7 @@ class QSRenderTestCase(TestCase):
             last_name="last%s" % self.time
             )
         user.save()
-        qs = xslt.managers.monkey_qs(
+        qs = xsltmanagers.monkey_qs(
             User.objects.filter(username="user%s" % self.time),
             use_values=False
             )
@@ -145,7 +130,7 @@ class QSRenderTestCase(TestCase):
             first_name="first%s" % self.time
             )
         user.save()
-        qs = xslt.managers.monkey_qs(
+        qs = xsltmanagers.monkey_qs(
             User.objects.filter(username="user%s" % self.time)
             )
 
@@ -226,7 +211,13 @@ class AVTTestCase(TestCase):
         t = xslt.Transformer(tmpl)
         c = Context({'foo%d' % self.time: 'some-location'})
         res = t(context=c)
-        assertXpath(res, '//a[@href="some-location/foo"]')
+        assertXpath(
+            res, 
+            '//xhtml:a[@href="some-location/foo"]',
+            namespaces={
+                "xhtml": "http://www.w3.org/1999/xhtml",
+                }
+            )
 
     def test_nonroot_avt(self):
         tmpl = BLANK % """
@@ -235,7 +226,13 @@ class AVTTestCase(TestCase):
         t = xslt.Transformer(tmpl)
         c = Context({'foo%d' % self.time: 'some-location'})
         res = t(context=c)
-        assertXpath(res, '//a[@href="/some-location/foo"]')
+        assertXpath(
+            res, 
+            '//xhtml:a[@href="/some-location/foo"]',
+            namespaces={
+                "xhtml": "http://www.w3.org/1999/xhtml",
+                }
+            )
 
     def test_nonroot_avt_method(self):
         tmpl = BLANK % """
@@ -244,7 +241,13 @@ class AVTTestCase(TestCase):
         t = xslt.Transformer(tmpl)
         c = Context({'foo%d' % self.time: 'some-location'})
         res = t(context=c)
-        assertXpath(res, '//a[@href="/SOME-LOCATION/foo"]')
+        assertXpath(
+            res, 
+            '//xhtml:a[@href="/SOME-LOCATION/foo"]',
+            namespaces={
+                "xhtml": "http://www.w3.org/1999/xhtml",
+                }
+            )
 
     def test_method(self):
         tmpl = BLANK % """
@@ -259,9 +262,17 @@ class AVTTestCase(TestCase):
         <a href="/{xdjango:foo%da()}/{xdjango:foo%db()}/foo">!</a>
         """ % (self.time, self.time)
         t = xslt.Transformer(tmpl)
-        c = Context({'foo%da' % self.time: 'some-location',
-            'foo%db' % self.time: 'more'})
+        c = Context({
+                'foo%da' % self.time: 'some-location',
+                'foo%db' % self.time: 'more'
+                })
         res = t(context=c)
-        assertXpath(res, '//a[@href="/some-location/more/foo"]')
+        assertXpath(
+            res, 
+            '//xhtml:a[@href="/some-location/more/foo"]',
+            namespaces={
+                "xhtml": "http://www.w3.org/1999/xhtml",
+                }
+            )
 
 # End
