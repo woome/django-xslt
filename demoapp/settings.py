@@ -62,7 +62,7 @@ INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.xslt',  # you don't need to include the app, we do so we can see the tests run
+    'djangoxslt.xslt',  # you don't need to include the app, we do so we can see the tests run
     'xsltdemo',
 )
 

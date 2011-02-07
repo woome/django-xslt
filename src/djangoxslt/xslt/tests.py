@@ -6,7 +6,7 @@ import time
 from django.template import Context
 from testhelp import assertXpath
 from unittest import TestCase
-from django.contrib import xslt
+from djangoxslt import xslt
 
 BLANK = """<?xml version="1.0" encoding="utf-8"?>
 <xsl:stylesheet  version="1.0" 
@@ -69,7 +69,7 @@ class XSLTTest(TestCase):
         self.assertEquals(response.status_code, 200)
         # We should really assert some xpath things about it.
         
-from django.contrib.xslt import managers as xsltmanagers
+from djangoxslt.xslt import managers as xsltmanagers
 
 class QSRenderTestCase(TestCase):
     def setUp(self):
