@@ -67,9 +67,8 @@ class XSLTTest(TestCase):
         """Test that we can retrieve the simple page."""
         response = self.client.get("/testtransform/simplepage/")
         self.assertEquals(response.status_code, 200)
-        print response.content
-
-
+        # We should really assert some xpath things about it.
+        
 from django.contrib.xslt import managers as xsltmanagers
 
 class QSRenderTestCase(TestCase):
