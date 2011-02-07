@@ -1,2 +1,31 @@
 This is an XSLT template engine for Django.
 
+XSLT is a powerful templating lanaguage and this package extends it
+further with the ability to render to XML any Django context object
+(including querysets).
+
+== Some XSLT examples ==
+
+Iterating over a queryset context object and rendering the username
+and the id.
+
+{{{
+<xsl:for-each select="xdjango:users()//user">
+  <span id="{@id}"><xsl:value-of select="@username"/></span>
+</xsl:for-each>
+}}}
+
+Spitting out the MEDIA_ROOT from the Django settings file.
+
+{{{
+<img src="{xdjango:settings.MEDIA_ROOT()}/images/boo.jpg"/>
+}}}
+
+== Project structure ==
+
+This is a contrib package and as such it designed to be installed into
+Django itself. 
+
+This project comes with a demoapp which is included to illustrate how
+to add xslt to any project but also to facilitate unit testing of the
+current code.
