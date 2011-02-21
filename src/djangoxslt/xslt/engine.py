@@ -131,7 +131,7 @@ djangothread = threading.local()
 class DjangoContextFunc(object):
     """Implements an extension function for django contexts"""
     def __init__(self, name, context=None):
-        self.logger = logging.getLogger("xslt.DjangoContextFunc")
+        self.logger = logging.getLogger("xslt.DjangoContextFunc.%s" % name)
         self.logger.debug("creating %s" % name)
         self.name = name
         # Define some default mappers and extend with settings
@@ -206,9 +206,13 @@ class DjangoContextFunc(object):
 
     def parse(self, ctx_value, *args):
         try:
-            xmldoc = etree.fromstring(unicode(ctx_value))
-            doc= [xmldoc]
-            return doc
+            ## Not sure if it's better to return EMPTYDOC from here if nothing is passed in
+            if ctx_value:
+                xmldoc = etree.fromstring(unicode(ctx_value))
+                doc= [xmldoc]
+                return doc
+            else:
+                return EMPTYDOC
         except etree.XMLSyntaxError, e:
             self.logger.debug(ctx_value)
             for i in e.error_log:
@@ -586,6 +590,11 @@ class TransformerFile(Transformer):
             e.stylesheet = stylesheet 
             e.message = "%s {%s}" % (e.message, e.stylesheet)
             raise
+
+from django.http import HttpResponse
+def render_to_response(xslt, context, mimetype="text/html"):
+    t = TransformerFile(settings.TRANSFORMS, xslt)
+    return HttpResponse(t(context=context), mimetype="text/html")
 
 class QuerySetTemplateElement(etree.XSLTExtension):
     def execute(self, context, self_node, input_node, output_parent):
