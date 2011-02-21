@@ -16,7 +16,7 @@ classifiers = [
 # django
 setup(
     name = "django-xslt",
-    version = "0.2",
+    version = "0.3",
     description = "an XSLT template system for Django",
     long_description = """A replacment for Django's template system based on XSLT.""",
     license = "BSD",
