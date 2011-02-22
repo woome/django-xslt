@@ -16,7 +16,7 @@ classifiers = [
 # django
 setup(
     name = "django-xslt",
-    version = "0.3",
+    version = "0.3.1",
     description = "an XSLT template system for Django",
     long_description = """A replacment for Django's template system based on XSLT.""",
     license = "BSD",
@@ -25,7 +25,7 @@ setup(
     url = "http://github.com/woome/django-xslt",
     download_url="http://github.com/woome/django-xslt/downloads",
     platforms = ["unix"],
-    packages = ["djangoxslt"],
+    packages = ["djangoxslt", "djangoxslt.xslt"],
     package_dir = {"":"src"},
 # Not sure we need a script, it would be nice to ship a django command line xsltproc?
 #    scripts=['src/md'],   
