@@ -128,6 +128,40 @@ class QSRenderTestCase(TestCase):
             '//users/user[@full_name="first%s last%s"]' % (self.time, self.time)
             )
 
+    def test_queryset_xmlify_user(self):
+        """Tests that querysets can be rendered with the xmlify method.
+        """
+        tmpl = BLANK % """
+        <xsl:copy-of select="xdjango:foo%d()"/>
+        """ % self.time
+        transformer = xslt.Transformer(tmpl)
+        
+        from django.contrib.auth.models import User
+        user = User(
+            username="user%s" % self.time,
+            password="password%s" % self.time,
+            first_name="first%s" % self.time
+            )
+        user.save()
+
+        # Make a queryset
+        qs = User.objects.filter(username="user%s" % self.time),
+
+        # Make an xml object from it
+        xml_list = xsltmanagers.xmlify(
+            qs,
+            first_name="first_name", 
+            username="username"
+            )
+
+        context_key = 'foo%d' % self.time
+        c = Context({ context_key: xml_list })
+        res = transformer(context=c)
+        assertXpath(
+            res, 
+            '//users/user[@first_name="first%s"]' % self.time,
+            )
+
 
     def test_queryset_render_user(self):
         """Tests that querysets can be rendered.
