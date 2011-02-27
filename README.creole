@@ -1,16 +1,17 @@
 This is an XSLT template engine for Django.
 
-XSLT is a powerful templating lanaguage and this package extends it
+XSLT is a powerful templating language and this package extends it
 further with the ability to render to XML any Django context object
 (including querysets).
 
 == Some XSLT examples ==
 
 The djangoxslt system causes Django {{{RequestContext}}} variables to
-be mapped into an XSLT function namespace. So that you can render
-Django values by calling them as XSLT functions.
+be mapped into an XSLT function namespace. You can render Django
+values by calling them as XSLT functions.
 
-This requires that you declare the xdjango namespace in your XSLT like this:
+This requires that you declare the xdjango namespace in your XSLT like
+this:
 
 {{{
 <?xml version="1.0" encoding="utf-8"?>
@@ -26,14 +27,15 @@ This requires that you declare the xdjango namespace in your XSLT like this:
 
 === Render simple values ===
 
-Spitting out the MEDIA_ROOT from the Django settings file:
+Spitting out the {{{MEDIA_ROOT}}} from the Django settings file:
 
 {{{
 <img src="{xdjango:settings.MEDIA_ROOT()}/images/boo.jpg"/>
 }}}
 
 this will be possible if you have added the Django builtin context
-processor {{{django.core.context_processors.media}}}.
+processor {{{django.core.context_processors.media}}} to the
+{{{TEMPLATE_CONTEXT_PROCESSORS}}} in the settings file.
 
 
 === Render more complex objects ===
