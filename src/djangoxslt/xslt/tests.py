@@ -82,7 +82,9 @@ def _qs_eval_helper(qs):
 
     from lxml import etree
     data1 = qs.__xml__()
-    return etree.tostring(data1)
+    strresult = etree.tostring(data1)
+    # print strresult
+    return strresult
 
 
 class QSRenderTestCase(TestCase):
@@ -241,7 +243,7 @@ class QSRenderTestCase(TestCase):
         self.assert_("__xml__" in selected.__dict__)
 
         xml_result = _qs_eval_helper(selected)
-        self.assert_(re.search(""" name="%s"[ /]""" % self.time, xml_result))
+        self.assert_(re.search(""" name="name%s"[ /]""" % self.time, xml_result))
         
         c = Context({ 'foo%d' % self.time: selected })
         res = transformer(context=c)
@@ -253,6 +255,10 @@ class QSRenderTestCase(TestCase):
             res, 
             '//xslttestmodels/xslttestmodel[@about_text="about%s"]' % self.time,
             )
+
+        ##### TODO!!!!
+        ### need to assert we have the RIGHT number of xslttestmodel objects
+        ### it should be 12 and not 3 because we do the .xml(...) before the lte=3
     
 
 

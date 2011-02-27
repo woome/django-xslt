@@ -43,10 +43,23 @@ def xmlify(qs, use_values=True, **kwargs):
 
     If use_values is False then a normal queryset is used instead of a
     values queryset.
+
+    The best way to use this with XSLT is to attach xmlify-ed
+    querysets to a request context and then call render_to_response
+    with the context object. 'xdjango:contextobject()' can then
+    retrieve the queryset.
     """
     captured_qs = qs
     class XML(XPathRenderer):
+        def __init__(self):
+            self._cached = None
+
         def __xml__(self, *args):
+            if self._cached == None:
+                self._cached = self.__evalxml__(*args)
+            return self._cached
+
+        def __evalxml__(self, *args):
             template_list = [(name, Template('{{%s}}' % value)) \
                                  for name,value in kwargs.iteritems()]
             django_fields = [template.split("|")[0].split(".")[0] for template in kwargs.values()]
