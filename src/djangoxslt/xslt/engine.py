@@ -22,7 +22,7 @@ allow abstracted rendering behaviour. The argument is called the
 used to render the of the context variable to a legal XPath value. The
 callable mapped to is called the ''renderer''.
 
-Two renderers are defined by default:
+Three renderers are defined by default:
 
  * xml 
 
@@ -32,6 +32,15 @@ Two renderers are defined by default:
  * parse
 
    attempts to XML parse the context variable string evaluation.
+
+ * parsehtml
+
+   attempts to HTML parse the context variable string evaluation, the
+   parsed document is normalized to XML before being returned so that
+   it can be succesfully evaluated by XSLT.
+
+   Currently, we fix any HTML parsed document with the XHTML namespace.
+
 
 Further renderers may be specified in settings with the variable
 XSLT_MAPPER:
@@ -119,7 +128,7 @@ class Html(Xml):
     def __init__(self, data, base_url=None, parser=None):
         super(Html,self).__init__(data, base_url, parser if parser else etree.HTMLParser())
 
-
+XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml"
 DJANGO_NAMESPACE="http://djangoproject.com/template/xslt"
 
 from django.template import Variable
@@ -190,9 +199,15 @@ class DjangoContextFunc(object):
 
     def parsehtml(self, ctx_value, *args):
         try:
-            htmlparser = etree.HTMLParser()
-            htmldoc = etree.parse(StringIO(ctx_value), htmlparser)
-            doc= [htmldoc.getroot()]
+            # First make it HTML
+            htmldoc = etree.HTML(ctx_value)
+            xmldoc = etree.XML(re.sub(
+                    "<html>", 
+                    """<html xmlns="%s">""" % XHTML_NAMESPACE,
+                    etree.tostring(htmldoc)
+                    ))
+            self.logger.debug(etree.tostring(xmldoc))
+            doc= [xmldoc]
             return doc
         except etree.XMLSyntaxError, e:
             self.logger.debug(ctx_value)
@@ -526,7 +541,7 @@ class Transformer(object):
         from django.template import Context
         global djangothread
         djangothread.context = context if context != None else Context()
-        doc = doc if doc else EMPTYDOC
+        doc = doc if doc is not None else EMPTYDOC
 
         # Call out to the percall hooks
         _transformer_percall_hook(self, doc, context, **params)

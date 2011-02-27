@@ -3,10 +3,13 @@
 """Tests for xslt"""
 
 import time
+import re
 from django.template import Context
 from testhelp import assertXpath
 from unittest import TestCase
 from djangoxslt import xslt
+import logging
+logging.basicConfig()
 
 BLANK = """<?xml version="1.0" encoding="utf-8"?>
 <xsl:stylesheet  version="1.0" 
@@ -71,6 +74,17 @@ class XSLTTest(TestCase):
         
 from djangoxslt.xslt import managers as xsltmanagers
 
+def _qs_eval_helper(qs):
+    """This is a useful little bit of code to eval the xml dom result.
+
+    The qs MUST have the __xml__ method, ie: it must result from an
+    .xml(...) somethere in the chain."""
+
+    from lxml import etree
+    data1 = qs.__xml__()
+    return etree.tostring(data1)
+
+
 class QSRenderTestCase(TestCase):
     def setUp(self):
         super(QSRenderTestCase, self).setUp()
@@ -96,6 +110,8 @@ class QSRenderTestCase(TestCase):
             last_name="last%s" % self.time
             )
         user.save()
+
+        # Use objects and NOT values
         qs = xsltmanagers.monkey_qs(
             User.objects.filter(username="user%s" % self.time),
             use_values=False
@@ -179,6 +195,65 @@ class QSRenderTestCase(TestCase):
             res, 
             '//xslttestmodels/xslttestmodel[@about_text="about%s"]' % self.time,
             )
+
+
+    def test_queryset_render_persists(self):
+        """Tests that queryset __xml__ method attachment works.
+
+        The __xml__ method, attached by using the xml() method, should
+        'stick' to a queryset through further child-querysets.
+        """
+        tmpl = BLANK % """
+        <xsl:copy-of select="xdjango:foo%d()"/>
+        """ % self.time
+        transformer = xslt.Transformer(tmpl)
+        
+        from models import XSLTTestModel
+        for i in range(1,20):
+            testobject = XSLTTestModel(
+                name = "name%s" % (int(self.time) * i),
+                about = "about%s" % (int(self.time) * i),
+                count = i
+                )
+            testobject.save()
+
+        # Do the query - this qs should have an 'xml' method
+        base_qs = XSLTTestModel.objects.filter(
+            name="name%s" % self.time
+            )
+
+        # Make a first sub-qs to check the xml method is being cloned
+        qs = base_qs.filter(count__lte=12)
+
+        # Check it has the xml method
+        self.assert_("xml" in qs.__dict__)
+
+        # Call the 'xml' method to store the xml to be generated and return a new qs
+        qs_from_xml = qs.xml(name="name",  about_text="about", count="count")
+
+        # Check it has the __xml__ method
+        self.assert_("__xml__" in qs_from_xml.__dict__)
+
+        # Make another qs from the 'xml' decorated one
+        selected = qs_from_xml.filter(count__lte=3)
+
+        # Check the sub-queryset has the __xml__ method
+        self.assert_("__xml__" in selected.__dict__)
+
+        xml_result = _qs_eval_helper(selected)
+        self.assert_(re.search(""" name="%s"[ /]""" % self.time, xml_result))
+        
+        c = Context({ 'foo%d' % self.time: selected })
+        res = transformer(context=c)
+        assertXpath(
+            res, 
+            '//xslttestmodels/xslttestmodel[@name="name%s"]' % self.time,
+            )
+        assertXpath(
+            res, 
+            '//xslttestmodels/xslttestmodel[@about_text="about%s"]' % self.time,
+            )
+    
 
 
 class AVTTestCase(TestCase):
