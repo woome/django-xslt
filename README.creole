@@ -4,6 +4,20 @@ XSLT is a powerful templating language and this package extends it
 further with the ability to render to XML any Django context object
 (including querysets).
 
+== Very simple use ==
+
+djangoxslt includes a view for mapping requests to XSLT pages
+directly. This is very easy to use. For example:
+
+{{{
+(r'^(?P<page>[A-Za-z0-9_.-]+)/*$', 'djangoxslt.xslt.views.page'),
+}}}
+
+will try to load an XSLT for any top level page, eg: /main.html or /top/
+
+For more infromation see the {{{djangoxslt.xslt.views.page}}} method.
+
+
 == Some XSLT examples ==
 
 The djangoxslt system causes Django {{{RequestContext}}} variables to
@@ -108,8 +122,6 @@ ctx = RequestContext(request, {
     })
 return render_to_response("myxslt.xslt", ctx)
 }}}
-
-
 
 == Project structure ==
 
