@@ -349,9 +349,7 @@ class DjangoResolver(etree.Resolver):
     data type.
     """
 
-    def __init__(self, transformer):
-        self.transformer = transformer
-        # Not sure, do we need our own resolver as well?
+    def __init__(self):
         self.parser = etree.XMLParser()
 
     def _resolve(self, content, context, base_url=None):
@@ -367,6 +365,7 @@ class DjangoResolver(etree.Resolver):
         # Not a perfect regex here, {} should wrap, or not.
         djangocalls = [r for r in results if FUNC_MATCH_RE1.search(r)]
 
+        fns = etree.FunctionNamespace(DJANGO_NAMESPACE)
         for call in djangocalls:
             offset = 0
             while True:
@@ -375,8 +374,8 @@ class DjangoResolver(etree.Resolver):
                     break
                 name = m.group(1)
                 offset = m.end()
-                if name not in self.transformer.fns:
-                    self.transformer.fns[name] = DjangoContextFunc(name)
+                if name not in fns:
+                    fns[name] = DjangoContextFunc(name)
         # We want to call the actual super here
         return super(DjangoResolver, self).resolve_string(
             content, 
@@ -479,7 +478,7 @@ class Transformer(object):
 
         global DJANGO_NAMESPACE
         self.logger = logging.getLogger("xslt.Transformer")
-        self.fns = etree.FunctionNamespace(DJANGO_NAMESPACE)
+        fns = etree.FunctionNamespace(DJANGO_NAMESPACE)
 
         # Setup the rest of the environment
         self.parser = parser if parser else etree.XMLParser()
@@ -488,7 +487,7 @@ class Transformer(object):
         _transformer_init_hook(self)
 
         # Setup the djangoxslt resolver
-        self.resolver = DjangoResolver(self)
+        self.resolver = DjangoResolver()
         self.parser.resolvers.add(self.resolver)
 
         # lxml doesn't seem to use the parser's resolver for this
@@ -514,8 +513,8 @@ class Transformer(object):
                     break
                 name = m.group(1)
                 offset = m.end()
-                if name not in self.fns:
-                    self.fns[name] = DjangoContextFunc(name)
+                if name not in fns:
+                    fns[name] = DjangoContextFunc(name)
         # End Great big hack
 
         qs_extension = QuerySetTemplateElement()
@@ -579,7 +578,7 @@ def transformer_file_resolv_callback(c, p):
     c is the content which should be a filename
     p is the parser which we'll use.
     """
-    logger = logging.getLogger("transformer_file_resolv_callback")
+    logger = logging.getLogger("djangoxslt.xslt.transformer_file_resolv_callback")
     try:
         stylesheet = joinpath(*c)
         return etree.parse(stylesheet, p)
