@@ -86,14 +86,12 @@ def _qs_eval_helper(qs):
     # print strresult
     return strresult
 
-class IterableTestCase(TestCase):
+class IterableTest(TestCase):
     def setUp(self):
-        super(IterableTestCase, self).setUp()
+        super(IterableTest, self).setUp()
         self.time = int(time.time() * 1000)
 
     def test_iterable_render(self):
-        """Tests that iterarbles can be rendered.
-        """
         tmpl = BLANK % """
         <xsl:copy-of select="xdjango:foo%d()"/>
         """ % self.time
@@ -182,7 +180,7 @@ class QSRenderTestCase(TestCase):
         user.save()
 
         # Make a queryset
-        qs = User.objects.filter(username="user%s" % self.time),
+        qs = User.objects.filter(username="user%s" % self.time)
 
         # Make an xml object from it
         xml_list = xsltmanagers.xmlify(
@@ -196,7 +194,7 @@ class QSRenderTestCase(TestCase):
         res = transformer(context=c)
         assertXpath(
             res, 
-            '//users/user[@first_name="first%s"]' % self.time,
+            '//users//user[@first_name="first%s"]' % self.time,
             )
 
 

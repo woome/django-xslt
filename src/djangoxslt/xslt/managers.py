@@ -65,7 +65,7 @@ def xmlify(qs, use_values=True, **kwargs):
             django_fields = [template.split("|")[0].split(".")[0] for template in kwargs.values()]
 
             # Do the query that gets the data to XML
-            # Ordinarily we use 'values' but we can use an ordniary query if necessary
+            # Ordinarily we use 'values' but we can use an ordinary query if necessary
             rows = []
             text_fields = []
             if use_values:
