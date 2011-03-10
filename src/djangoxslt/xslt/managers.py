@@ -100,6 +100,76 @@ def xmlify(qs, use_values=True, **kwargs):
                 
     return XML()
 
+def xmlifyiter(iterator, name, **kwargs):
+    """XML serializer to elements of 'name'.
+
+    The kwargs specifies the XML -> iterator values mapping.  
+
+    At the moment the iterator values are expected to be dictionary
+    type objects.
+
+    The kwargs specifies:
+
+      an xml result attribute name = "an iterator value object dictionary key"
+
+    for example:
+
+      xmlifyiter(iteratorobject, "Iterable", name="username", age="age")
+
+    =>
+      <iterables>
+         <iterable name="nicferrier" age="40"/>
+         <iterable name="neebone" age="29"/>
+         <iterable name="iamseb" age="31"/>
+      </iterables>
+    """
+    captured_iter = iterator
+    captured_element_name = name
+    class XML(XPathRenderer):
+        def __init__(self):
+            self._cached = None
+
+        def __xml__(self, *args):
+            if self._cached == None:
+                self._cached = self.__evalxml__(*args)
+            return self._cached
+
+        def __evalxml__(self, *args):
+            template_list = [(name, Template('{{%s}}' % value)) \
+                                 for name,value in kwargs.iteritems()]
+            dict_keys = [template.split("|")[0].split(".")[0] for template in kwargs.values()]
+
+            rows = []
+            text_fields = []
+            for row in captured_iter:
+                row_result = {}
+                for field in dict_keys:
+                    value = row.get(field)
+                    row_result[field] = value
+                    if getattr(value, 'is_text', False):
+                        text_fields.append(field)
+                rows += [row_result]
+
+            # Make a nice list of template outputed rows
+            from lxml import etree
+            xmlname = captured_element_name
+            xmlroot = etree.Element("%ss" % xmlname.lower())
+            #import pdb
+            #pdb.set_trace()
+            for record in rows:
+                c = Context()
+                c.update(record)
+                child = etree.SubElement(xmlroot, xmlname.lower())
+                for name,template in template_list:
+                    if name in text_fields:
+                        elem = etree.SubElement(child, name)
+                        elem.text = template.render(c)
+                    else:
+                        child.attrib[name] = template.render(c)
+            return xmlroot
+                
+    return XML()
+
 
 from django.db.models.query import QuerySet
 class XmlQuerySet(QuerySet):

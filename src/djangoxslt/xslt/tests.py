@@ -86,6 +86,43 @@ def _qs_eval_helper(qs):
     # print strresult
     return strresult
 
+class IterableTestCase(TestCase):
+    def setUp(self):
+        super(IterableTestCase, self).setUp()
+        self.time = int(time.time() * 1000)
+
+    def test_iterable_render(self):
+        """Tests that iterarbles can be rendered.
+        """
+        tmpl = BLANK % """
+        <xsl:copy-of select="xdjango:foo%d()"/>
+        """ % self.time
+        transformer = xslt.Transformer(tmpl)
+        
+        dictlist = [
+            {"a": 10, "b": 20, "c": 40},
+            {"a": 11, "b": 21, "c": 41},
+            {"a": 12, "b": 22, "c": 42},
+            ]
+
+        xmlobj = xsltmanagers.xmlifyiter(
+            dictlist,
+            "Simple",
+            attriba="a",
+            otherattrib="c"
+            )
+
+        # Use objects and NOT values
+        context_key = 'foo%d' % self.time
+        c = Context({ 
+                context_key: xmlobj,
+                })
+
+        res = transformer(context=c)
+        assertXpath(
+            res, 
+            '//simples/simple[@attriba="%s"]' % 10
+            )
 
 class QSRenderTestCase(TestCase):
     def setUp(self):
