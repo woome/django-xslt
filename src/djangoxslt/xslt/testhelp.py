@@ -23,7 +23,7 @@ def assertXpath(xml, xpr, assertion_message="", namespaces=None, html=False):
     except Exception, e:
         raise e
     else:
-        ret = doc.xpath(xpr, namespaces=namespaces)
+        ret = doc.xpath(xpr, namespaces=namespaces) if namespaces else doc.xpath(xpr)
         if not ret:
             assertion_message = assertion_message \
                 if assertion_message \
