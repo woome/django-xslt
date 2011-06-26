@@ -268,6 +268,41 @@ class QSRenderTestCase(TestCase):
             )
 
 
+    def test_queryset_render_testmodel_no_kwargs(self):
+        """Tests that querysets can be rendered without kwargs.
+
+        Takes our own test model and xmlify it with no kwargs causing
+        it's own __xml__ method to be used to render the XML.
+        """
+        tmpl = BLANK % """
+        <xsl:copy-of select="xdjango:foo%d()"/>
+        """ % self.time
+        transformer = xslt.Transformer(tmpl)
+        
+        from models import XSLTTestModel
+        testobject = XSLTTestModel(
+            name = "name%s" % self.time,
+            about = "about%s" % self.time,
+            count = 10
+            )
+        testobject.save()
+
+        # Do the query and pull back the xml
+        xml = XSLTTestModel.objects.filter(
+            name="name%s" % self.time
+            )
+
+        xmlified = xsltmanagers.xmlify(xml, use_values=False)
+
+        c = Context({ 'foo%d' % self.time: xmlified })
+        res = transformer(context=c)
+        assertXpath(
+            res, 
+            '//xslttestmodels/xslttestmodel/name[text()="name%s"]' % self.time,
+            )
+
+
+
     def test_queryset_render_persists(self):
         """Tests that queryset __xml__ method attachment works.
 

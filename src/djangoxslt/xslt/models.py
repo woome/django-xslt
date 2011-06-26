@@ -19,4 +19,7 @@ class XSLTTestModel(models.Model):
     # Setup the manager to be a rendering manager
     objects = XSLTTestManager()
 
+    def __xml__(self):
+        return "<name>%s</name>" % self.name
+
 # End

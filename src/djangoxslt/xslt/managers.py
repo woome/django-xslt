@@ -73,11 +73,15 @@ def xmlify(qs, use_values=True, **kwargs):
             else:
                 for row in captured_qs:
                     row_result = {}
-                    for field in django_fields:
-                        value = getattr(row, field)
-                        row_result[field] = value() if isinstance(value, types.MethodType) else value
-                        if getattr(value, 'is_text', False):
-                            text_fields.append(field)
+                    if django_fields:
+                        for field in django_fields:
+                            value = getattr(row, field)
+                            row_result[field] = value() if isinstance(value, types.MethodType) else value
+                            if getattr(value, 'is_text', False):
+                                text_fields.append(field)
+                    else:
+                        row_result = row.__xml__()
+
                     rows += [row_result]
 
             # Make a nice list of template outputed rows
@@ -90,12 +94,17 @@ def xmlify(qs, use_values=True, **kwargs):
                 c = Context()
                 c.update(record)
                 child = etree.SubElement(xmlroot, xmlname.lower())
-                for name,template in template_list:
-                    if name in text_fields:
-                        elem = etree.SubElement(child, name)
-                        elem.text = template.render(c)
-                    else:
-                        child.attrib[name] = template.render(c)
+                if template_list:
+                    for name,template in template_list:
+                        if name in text_fields:
+                            elem = etree.SubElement(child, name)
+                            elem.text = template.render(c)
+                        else:
+                            child.attrib[name] = template.render(c)
+                else:
+                    parsed = etree.XML(record)
+                    elem = child.append(parsed)
+
             return xmlroot
                 
     return XML()
